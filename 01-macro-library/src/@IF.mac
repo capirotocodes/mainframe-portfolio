@@ -1,0 +1,36 @@
+*=====================================================================
+* @IF  -  Begin a structured conditional
+*---------------------------------------------------------------------
+* Purpose     : Emit a compare and a branch that skips the THEN part
+*               when the relation is false. Closed by @ENDIF, with an
+*               optional @ELSE.
+* Inputs      : &TEST sublist (mnemonic,op1,op2) - the compare to do.
+*               &COND relation EQ/NE/GT/LT/GE/LE that must hold for the
+*               THEN part to run.
+* Outputs     : Compare + conditional branch; nesting state pushed.
+* Registers   : Whatever the supplied compare uses; CC set.
+* Preserved   : N/A (no linkage).
+* Dependencies: @XINVB; GBLA &@IFLV/&@IFNX, GBLB &@IFEL; @ELSE/@ENDIF.
+* Sample      : @IF (C,R5,=F'0'),EQ
+*=====================================================================
+         MACRO
+&LAB     @IF   &TEST,&COND
+         GBLA  &@IFLV,&@IFNX(64)
+         GBLB  &@IFEL(64)
+         GBLC  &@INVB
+         AIF   (N'&TEST GE 2).ok
+         MNOTE 8,'@IF: TEST MUST BE (MNEMONIC,OP1,OP2)'
+         MEXIT
+.ok      ANOP
+&@IFLV   SETA  &@IFLV+1
+&@IFNX(&@IFLV) SETA &SYSNDX
+&@IFEL(&@IFLV) SETB 0
+         AIF   (N'&TEST EQ 2).one
+&LAB     &TEST(1) &TEST(2),&TEST(3)
+         AGO   .br
+.one     ANOP
+&LAB     &TEST(1) &TEST(2)
+.br      ANOP
+         @XINVB &COND
+         &@INVB #IZ&@IFNX(&@IFLV)   branch out if condition false
+         MEND

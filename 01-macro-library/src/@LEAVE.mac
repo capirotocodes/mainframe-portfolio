@@ -1,0 +1,30 @@
+*=====================================================================
+* @LEAVE  -  Standard OS exit linkage
+*---------------------------------------------------------------------
+* Purpose     : Restore the caller's registers and return, optionally
+*               setting a return code in R15.
+* Inputs      : RC= optional return code: a literal (RC=0) or a
+*               register in parentheses (RC=(R3)).
+* Outputs     : R15 = return code (if RC= given); control returned to
+*               the caller via R14.
+* Registers   : 0-15 (R15 left holding the return code).
+* Preserved   : Restores caller R0-R12 and R14; R15 NOT reloaded so
+*               the return code survives.
+* Dependencies: Pairs with @ENTER.
+* Sample      : @LEAVE RC=0
+*=====================================================================
+         MACRO
+&LAB     @LEAVE &RC=
+&LAB     DS    0H
+         AIF   ('&RC' EQ '').nrc
+         AIF   ('&RC'(1,1) EQ '(').rcreg
+         LA    15,&RC               return code (literal)
+         AGO   .nrc
+.rcreg   ANOP
+         LR    15,&RC(1)            return code (register)
+.nrc     ANOP
+         L     13,4(,13)           caller's save area
+         L     14,12(,13)          restore return address
+         LM    0,12,20(13)         restore R0-R12
+         BR    14                   return to caller
+         MEND

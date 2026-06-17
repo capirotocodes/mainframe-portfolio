@@ -1,0 +1,50 @@
+*=====================================================================
+* @PCALL  -  Build a VL parameter list and call a routine
+*---------------------------------------------------------------------
+* Purpose     : Construct a standard OS parameter list (addresses of
+*               the parameters, high-order bit set on the last) and
+*               call the target with standard linkage.
+* Inputs      : Positional EP - entry point name (label).
+*               PARMS= parenthesised list of parameter labels.
+*               TYPE=EXTERNAL (default, via =V) or INTERNAL (via LA).
+* Outputs     : R1 -> parameter list (or 0 if no PARMS); R15 = entry;
+*               BALR 14,15 performed.
+* Registers   : 1,14,15.
+* Preserved   : Caller is responsible for any regs it needs across
+*               the call (standard convention: R0,R1,R14,R15 volatile).
+* Dependencies: For TYPE=EXTERNAL the program must provide an LTORG.
+* Sample      : @PCALL DOUBLE,PARMS=(SUM)
+*=====================================================================
+         MACRO
+&LAB     @PCALL &EP,&PARMS=,&TYPE=EXTERNAL
+         LCLA  &I,&N
+         AIF   ('&EP' NE '').ok
+         MNOTE 8,'@PCALL: ENTRY POINT REQUIRED'
+         MEXIT
+.ok      ANOP
+&LAB     DS    0H
+         AIF   ('&PARMS' EQ '').noplist
+&N       SETA  N'&PARMS
+         J     #PB&SYSNDX          branch around parm list
+#PL&SYSNDX DS  0A
+&I       SETA  1
+.ploop   AIF   (&I GT &N).pdone
+         DC    A(&PARMS(&I))       full 4-byte (31-bit) address
+&I       SETA  &I+1
+         AGO   .ploop
+.pdone   ANOP
+#PB&SYSNDX DS  0H
+         LA    1,#PL&SYSNDX        R1 -> parameter list
+         OI    #PL&SYSNDX+(&N-1)*4,X'80'  VL flag on last parm
+         AGO   .load
+.noplist ANOP
+         SLR   1,1                 R1 = 0 (no parameters)
+.load    ANOP
+         AIF   ('&TYPE' EQ 'INTERNAL').int
+         L     15,=V(&EP)          external entry
+         AGO   .call
+.int     ANOP
+         LA    15,&EP              internal entry
+.call    ANOP
+         BALR  14,15               call
+         MEND

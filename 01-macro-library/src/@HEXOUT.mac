@@ -1,0 +1,62 @@
+*=====================================================================
+* @HEXOUT  -  Convert binary to printable EBCDIC hex
+*---------------------------------------------------------------------
+* Purpose     : Convert LEN bytes at SRC into 2*LEN EBCDIC hex
+*               characters at DST using the UNPK + TR technique, in
+*               macro-time chunks of up to 7 bytes.
+* Inputs      : Positional SRC and DST (plain relocatable labels).
+*               LEN= number of bytes 1..16 (default 4).
+*               MODE=DEFINE emits the shared table and work areas once
+*               (place it in your data area); MODE=GEN (default) emits
+*               the conversion code.
+* Outputs     : 2*LEN printable hex characters stored at DST.
+* Registers   : None (storage-to-storage only).
+* Preserved   : N/A.
+* Dependencies: One MODE=DEFINE per assembly. GBLB &@HEXD.
+* Sample      : @HEXOUT MODE=DEFINE      (in data area)
+*               @HEXOUT SUM,MSGSUM,LEN=4 (in code)
+*=====================================================================
+         MACRO
+&LAB     @HEXOUT &SRC,&DST,&LEN=4,&MODE=GEN
+         GBLB  &@HEXD
+         LCLA  &OFF,&REM,&CK,&CK2,&DO2
+         LCLC  &LBL
+         AIF   ('&MODE' EQ 'DEFINE').def
+         AIF   ('&SRC' NE '' AND '&DST' NE '').g1
+         MNOTE 8,'@HEXOUT: SRC AND DST REQUIRED'
+         MEXIT
+.g1      AIF   (&LEN GE 1 AND &LEN LE 16).g2
+         MNOTE 8,'@HEXOUT: LEN MUST BE 1..16'
+         MEXIT
+.g2      ANOP
+&LBL     SETC  '&LAB'
+&OFF     SETA  0
+.chunk   ANOP
+&REM     SETA  &LEN-&OFF
+         AIF   (&REM EQ 0).gfin
+&CK      SETA  &REM
+         AIF   (&CK LE 7).ck1
+&CK      SETA  7
+.ck1     ANOP
+&CK2     SETA  &CK+&CK
+&DO2     SETA  &OFF+&OFF
+&LBL     MVC   @HEXWKI(&CK),&SRC.+&OFF
+         MVI   @HEXWKI+&CK,X'00'
+         UNPK  @HEXWKO(&CK2+1),@HEXWKI(&CK+1)
+         TR    @HEXWKO(&CK2),@HEXTAB
+         MVC   &DST.+&DO2.(&CK2),@HEXWKO
+&LBL     SETC  ''
+&OFF     SETA  &OFF+&CK
+         AGO   .chunk
+.gfin    MEXIT
+.def     ANOP
+         AIF   (&@HEXD EQ 0).d1
+         MNOTE 8,'@HEXOUT MODE=DEFINE ALREADY ISSUED'
+         MEXIT
+.d1      ANOP
+&@HEXD   SETB  1
+@HEXTAB  DC    240X'00'            entries X'00'-X'EF' (unused)
+         DC    C'0123456789ABCDEF' entries X'F0'-X'FF'
+@HEXWKI  DS    CL8                 unpack input  (<=7 bytes + 1)
+@HEXWKO  DS    CL15                unpack output (2*7 + 1)
+         MEND

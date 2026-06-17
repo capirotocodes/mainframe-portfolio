@@ -1,0 +1,32 @@
+*=====================================================================
+* @ELSE  -  Alternate path of a structured conditional
+*---------------------------------------------------------------------
+* Purpose     : Close the THEN part (branch over the ELSE part) and
+*               mark the start of the ELSE part.
+* Inputs      : None.
+* Outputs     : Unconditional branch to the end label; ELSE-start
+*               (false target) label defined.
+* Registers   : None.
+* Preserved   : N/A.
+* Dependencies: Must sit between @IF and @ENDIF. GBLA &@IFLV/&@IFNX,
+*               GBLB &@IFEL.
+* Sample      : @ELSE
+*=====================================================================
+         MACRO
+&LAB     @ELSE
+         GBLA  &@IFLV,&@IFNX(64)
+         GBLB  &@IFEL(64)
+         AIF   (&@IFLV GT 0).ok
+         MNOTE 8,'@ELSE WITHOUT @IF'
+         MEXIT
+.ok      AIF   (&@IFEL(&@IFLV) EQ 0).noel
+         MNOTE 8,'DUPLICATE @ELSE'
+         MEXIT
+.noel    ANOP
+&@IFEL(&@IFLV) SETB 1
+         AIF   ('&LAB' EQ '').nl
+&LAB     DS    0H
+.nl      ANOP
+         B     #IE&@IFNX(&@IFLV)   skip the else part
+#IZ&@IFNX(&@IFLV) DS 0H            else part begins (false target)
+         MEND

@@ -1,0 +1,44 @@
+*=====================================================================
+* @XINVB  -  Internal helper: relation -> inverse branch mnemonic
+*---------------------------------------------------------------------
+* Purpose     : Set global &@INVB to the branch mnemonic that branches
+*               when &COND is FALSE. Used by @IF, @DO and @ENDDO so a
+*               structured test falls through on true and branches away
+*               on false.
+* Inputs      : &COND one of EQ NE GT LT GE LE (aliases H L NH NL).
+* Outputs     : GBLC &@INVB set to BNE/BE/BNH/BNL/BL/BH.
+* Registers   : None (assembly-time only).
+* Preserved   : N/A.
+* Dependencies: Internal to the macro library.
+* Sample      : @XINVB EQ        (sets &@INVB to BNE)
+*=====================================================================
+         MACRO
+         @XINVB &COND
+         GBLC  &@INVB
+&@INVB   SETC  'B'
+         AIF   ('&COND' EQ 'EQ').xeq
+         AIF   ('&COND' EQ 'NE').xne
+         AIF   ('&COND' EQ 'GT' OR '&COND' EQ 'H').xgt
+         AIF   ('&COND' EQ 'LT' OR '&COND' EQ 'L').xlt
+         AIF   ('&COND' EQ 'GE' OR '&COND' EQ 'NL').xge
+         AIF   ('&COND' EQ 'LE' OR '&COND' EQ 'NH').xle
+         MNOTE 8,'@XINVB: INVALID RELATION ''&COND'''
+         MEXIT
+.xeq     ANOP
+&@INVB   SETC  'BNE'
+         MEXIT
+.xne     ANOP
+&@INVB   SETC  'BE'
+         MEXIT
+.xgt     ANOP
+&@INVB   SETC  'BNH'
+         MEXIT
+.xlt     ANOP
+&@INVB   SETC  'BNL'
+         MEXIT
+.xge     ANOP
+&@INVB   SETC  'BL'
+         MEXIT
+.xle     ANOP
+&@INVB   SETC  'BH'
+         MEND

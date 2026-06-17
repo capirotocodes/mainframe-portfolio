@@ -1,0 +1,41 @@
+*=====================================================================
+* @ENDDO  -  Close a structured loop
+*---------------------------------------------------------------------
+* Purpose     : Branch back to the loop top and define the loop-exit
+*               label. With UNTIL= it emits a bottom test that branches
+*               back while the relation is false (loops until true).
+* Inputs      : UNTIL= sublist (mnemonic,op1,op2); UCOND= relation that
+*               ends the loop when it becomes true.
+* Outputs     : Back branch (or bottom test) and loop-exit label;
+*               DO nesting level popped.
+* Registers   : Whatever the supplied compare uses; CC set.
+* Preserved   : N/A.
+* Dependencies: @XINVB; GBLA &@DOLV/&@DONX; closes a prior @DO.
+* Sample      : @ENDDO UNTIL=(C,R10,=F'0'),UCOND=EQ
+*=====================================================================
+         MACRO
+&LAB     @ENDDO &UNTIL=,&UCOND=
+         GBLA  &@DOLV,&@DONX(64)
+         GBLC  &@INVB
+         AIF   (&@DOLV GT 0).ok
+         MNOTE 8,'@ENDDO WITHOUT @DO'
+         MEXIT
+.ok      ANOP
+         AIF   ('&LAB' EQ '').nl
+&LAB     DS    0H
+.nl      ANOP
+         AIF   ('&UNTIL' EQ '').inf
+         AIF   (N'&UNTIL GE 3).u3
+         MNOTE 8,'@ENDDO UNTIL= MUST BE (MNEMONIC,OP1,OP2)'
+         MEXIT
+.u3      ANOP
+         &UNTIL(1) &UNTIL(2),&UNTIL(3)
+         @XINVB &UCOND
+         &@INVB #DT&@DONX(&@DOLV)   loop back until cond true
+         AGO   .bot
+.inf     ANOP
+         B     #DT&@DONX(&@DOLV)    loop back to top
+.bot     ANOP
+#DB&@DONX(&@DOLV) DS 0H            loop exit
+&@DOLV   SETA  &@DOLV-1
+         MEND

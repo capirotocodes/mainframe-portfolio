@@ -1,0 +1,78 @@
+# z/OS HLASM Systems Programming Portfolio
+
+A collection of five IBM z/OS High Level Assembler (HLASM) artifacts that
+demonstrate practical mainframe systems programming: macro engineering,
+control block navigation, dynamic allocation against JES2, recovery
+routine (ESTAE) handling with SDWA analysis, and SMF record mapping.
+
+Everything here is written to z/OS conventions (AMODE 31 / RMODE ANY,
+standard OS linkage, IBM-supplied DSECTs and macros) and is meant to be
+read like production code in a code review, not just to run.
+
+## What's inside
+
+| # | Artifact | What it demonstrates |
+|---|----------|----------------------|
+| 1 | [Personal Macro Library](01-macro-library/) | Macro language, conditional assembly, `&SYSNDX`, `GBLA` nesting counters, `MNOTE` diagnostics — structured-programming macros (`@ENTER`/`@LEAVE`, `@IF`/`@ELSE`/`@ENDIF`, `@DO`/`@ENDDO`) plus `@HEXOUT` and `@PCALL`. |
+| 2 | [Control Block Walker](02-cb-walker/) | z/OS internals and DSECT discipline — walks PSA → CVT → ASCB → TCB and prints key fields using IHAPSA, CVT, IHAASCB, IKJTCB. |
+| 3 | [JES2 SYSOUT Scraper](03-sysout-scraper/) | Dynamic allocation via SVC 99 (`SUBSYS=JES2`), QSAM I/O, and the JES subsystem interface — reads a SYSOUT dataset and extracts matching lines. |
+| 4 | [ESTAE Recovery Demo](04-estae-demo/) | Recovery routines and supervisor services — forces an abend (e.g., S0C7), recovers in an ESTAE exit, formats SDWA fields, and reports; RETRY and PERCOLATE variants. |
+| 5 | [SMF Type-30 Reporter](05-smf30-reporter/) | SMF record mapping — `MKSMF30` writes synthetic type-30 subtype-5 records, `SMFRPT30` reads them with QSAM and reports job CPU/elapsed, locating sections via the `IFASMFR (30)` header triplets (`SMFRCD30`/`SMF30ID`/`SMF30CAS`). |
+
+## Repository layout
+
+```
+mainframe-portfolio/
+  README.md              <- this file
+  CLAUDE.md              <- project context / status / conventions
+  01-macro-library/      src/ examples/ jcl/ docs/ README.md
+  02-cb-walker/          src/ jcl/ docs/ README.md
+  03-sysout-scraper/     src/ jcl/ docs/ samples/ README.md
+  04-estae-demo/         src/ jcl/ docs/ README.md
+  05-smf30-reporter/     src/ jcl/ docs/ README.md
+```
+
+### A note on file extensions
+
+Files on disk use `.asm` (programs), `.mac` (macros), and `.jcl` (JCL) so
+they are easy to browse and diff off-platform. **On z/OS these become PDS
+members with no extension** — e.g. `src/CBWALK.asm` is uploaded as member
+`CBWALK` in a source PDS, and a macro `@HEXOUT.mac` becomes member
+`@HEXOUT` in a macro library (SYSLIB) PDS.
+
+## Building and running on z/OS (general)
+
+Each artifact ships its own JCL under `jcl/`, but the shape is the same:
+
+1. **Upload** the source and JCL into PDS(E) datasets (FB 80), e.g.
+   `hlq.SOURCE`, `hlq.MACLIB`, `hlq.JCL`. Macros go in a library pointed at
+   by the assembler `SYSLIB` DD.
+
+2. **Assemble** with High Level Assembler (program `ASMA90`):
+   - `SYSIN` → the source member
+   - `SYSLIB` → IBM macro/DSECT libraries (`SYS1.MACLIB`,
+     `SYS1.MODGEN`) plus this repo's `hlq.MACLIB` for artifact 1
+   - `SYSLIN` → object module output
+   - Review `SYSPRINT` — the assembly listing is part of the deliverable.
+
+3. **Link-edit / bind** with the binder (`IEWL`/`HEWL`):
+   - `SYSLIN` → object module(s)
+   - `SYSLMOD` → load library `hlq.LOAD`
+   - AMODE 31 / RMODE ANY as specified per artifact.
+
+4. **Run** via the artifact's execution JCL (a simple `EXEC PGM=` step,
+   plus any `STEPLIB`, parameters, and SYSOUT DDs the program needs).
+
+A combined assemble-link-go can use the IBM-supplied `ASMACLG` /
+`ASMACL` cataloged procedures; the per-artifact JCL shows the explicit
+steps for clarity.
+
+> Programs that touch system control blocks (artifacts 2–4) read live
+> z/OS storage and/or use supervisor services. Run them on a system where
+> you are authorized to do so (work sandbox or IBM Z Xplore), not on
+> production.
+
+## Status
+
+See the status table in [CLAUDE.md](CLAUDE.md). Artifacts are built one at
+a time; this README is updated as each is completed.

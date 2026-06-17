@@ -1,0 +1,34 @@
+*=====================================================================
+* @DO  -  Begin a structured loop
+*---------------------------------------------------------------------
+* Purpose     : Mark the loop top. With WHILE= it emits a top-tested
+*               loop (test, exit when false). With no operands it is an
+*               open loop (use @ENDDO UNTIL= for a bottom test, or
+*               branch out of the body).
+* Inputs      : WHILE= sublist (mnemonic,op1,op2); WCOND= relation that
+*               must hold to keep looping.
+* Outputs     : Loop-top label; optional compare + exit branch.
+* Registers   : Whatever the supplied compare uses; CC set.
+* Preserved   : N/A.
+* Dependencies: @XINVB; GBLA &@DOLV/&@DONX; closed by @ENDDO.
+* Sample      : @DO WHILE=(CR,R4,R8),WCOND=LE
+*=====================================================================
+         MACRO
+&LAB     @DO   &WHILE=,&WCOND=
+         GBLA  &@DOLV,&@DONX(64)
+         GBLC  &@INVB
+&@DOLV   SETA  &@DOLV+1
+&@DONX(&@DOLV) SETA &SYSNDX
+         AIF   ('&LAB' EQ '').nl
+&LAB     DS    0H
+.nl      ANOP
+#DT&@DONX(&@DOLV) DS 0H            loop top
+         AIF   ('&WHILE' EQ '').done
+         AIF   (N'&WHILE GE 3).w3
+         MNOTE 8,'@DO WHILE= MUST BE (MNEMONIC,OP1,OP2)'
+         MEXIT
+.w3      ANOP
+         &WHILE(1) &WHILE(2),&WHILE(3)
+         @XINVB &WCOND
+         &@INVB #DB&@DONX(&@DOLV)   exit when while-cond false
+.done    MEND

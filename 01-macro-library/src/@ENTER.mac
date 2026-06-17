@@ -1,0 +1,33 @@
+*=====================================================================
+* @ENTER  -  Standard OS entry linkage
+*---------------------------------------------------------------------
+* Purpose     : Save the caller's registers, establish a base
+*               register, and chain a fresh save area into the
+*               caller's save area.
+* Inputs      : BASE= base register to load (default 12). Issue this
+*               macro immediately after the CSECT/AMODE/RMODE lines
+*               so the entry address in R15 maps the control section.
+* Outputs     : Base register set; R13 -> this program's save area;
+*               addressability established via USING on the CSECT.
+* Registers   : 13,14,15 and the chosen base register.
+* Preserved   : Caller's R0-R14 saved in the caller's save area.
+* Dependencies: Pairs with @LEAVE. Uses &SYSECT and &SYSNDX.
+* Sample      : MYPROG   CSECT
+*               MYPROG   AMODE 31
+*               MYPROG   RMODE ANY
+*                        @ENTER
+*=====================================================================
+         MACRO
+&LAB     @ENTER &BASE=12
+&LAB     DS    0H
+         STM   14,12,12(13)        save caller registers
+         LR    &BASE,15            base = entry point address
+         USING &SYSECT,&BASE       establish addressability
+         LA    14,#SAVE&SYSNDX     point at my save area
+         ST    13,4(,14)           backward chain
+         ST    14,8(,13)           forward chain
+         LR    13,14               R13 -> my save area
+         J     #SVEX&SYSNDX        skip over the save area
+#SAVE&SYSNDX DC 18F'0'             this program's save area
+#SVEX&SYSNDX DS 0H
+         MEND

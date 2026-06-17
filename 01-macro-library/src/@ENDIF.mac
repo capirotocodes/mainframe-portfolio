@@ -1,0 +1,32 @@
+*=====================================================================
+* @ENDIF  -  Close a structured conditional
+*---------------------------------------------------------------------
+* Purpose     : Define the join label for the conditional and pop the
+*               IF nesting level.
+* Inputs      : None.
+* Outputs     : The false target (no @ELSE) or end target (had @ELSE)
+*               label is defined here.
+* Registers   : None.
+* Preserved   : N/A.
+* Dependencies: Closes a prior @IF. GBLA &@IFLV/&@IFNX, GBLB &@IFEL.
+* Sample      : @ENDIF
+*=====================================================================
+         MACRO
+&LAB     @ENDIF
+         GBLA  &@IFLV,&@IFNX(64)
+         GBLB  &@IFEL(64)
+         AIF   (&@IFLV GT 0).ok
+         MNOTE 8,'@ENDIF WITHOUT @IF'
+         MEXIT
+.ok      ANOP
+         AIF   ('&LAB' EQ '').nl
+&LAB     DS    0H
+.nl      ANOP
+         AIF   (&@IFEL(&@IFLV) EQ 1).hadel
+#IZ&@IFNX(&@IFLV) DS 0H            false target (no else)
+         AGO   .pop
+.hadel   ANOP
+#IE&@IFNX(&@IFLV) DS 0H            end target (had else)
+.pop     ANOP
+&@IFLV   SETA  &@IFLV-1
+         MEND
