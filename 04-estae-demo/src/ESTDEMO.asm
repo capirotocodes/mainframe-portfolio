@@ -37,14 +37,19 @@ MRETRY   MVI   MODEFLAG,MODERTRY
          B     MAINGO
 MPERC    MVI   MODEFLAG,MODEPERC
 MAINGO   DS    0H
-*  ---- (TASKS 3-4 INSERT: ESTAEX, RECOVERY HERE) ----------------
+         ESTAEX RECVEXIT,PARAM=PGMBASEA   ESTABLISH RECOVERY EXIT
          MVC   WTOTXT,MSGTRY       "ABOUT TO ABEND"
          BAL   R6,PUTWTO
          CVB   R5,BADPACK          INVALID PACKED DATA -> S0C7
          MVC   WTOTXT,MSGNORC      (ONLY REACHED IF NO EXCEPTION)
          BAL   R6,PUTWTO
+*  ---- RETRY RESUME POINT (REACHED VIA SETRP RETADDR) ----------
+RETRYPT  DS    0H
+         LARL  R12,ESTDEMO         RE-ESTABLISH BASE (REGS UNTRUSTED)
+         ESTAEX 0                  CANCEL RECOVERY (CLEAN CONTINUE)
+         MVC   WTOTXT,MSGREC       "RECOVERED, CONTINUING"
+         BAL   R6,PUTWTO
 NORMEXIT DS    0H
-RETPT0   DS    0H
          @LEAVE RC=0
 *  ---- BAD PARM: REPORT AND RC 8 -------------------------------
 BADPARM  DS    0H
@@ -58,6 +63,46 @@ BADPARM  DS    0H
 PUTWTO   DS    0H
          WTO   MF=(E,WTOLIST)
          BR    R6
+*=====================================================================
+* RECVEXIT - ESTAE RECOVERY ROUTINE
+*   ENTRY: R0=0 IF SDWA PRESENT (12 IF NOT), R1->SDWA, R14=RTM RETURN,
+*          R15=THIS ENTRY POINT.  NO BASE ON ENTRY: VOLATILE REGS ARE
+*          SAVED FIRST, THEN R12 IS RELOADED VIA LARL (PC-RELATIVE).
+*=====================================================================
+RECVEXIT DS    0H
+*  ---- SAVE VOLATILE ENTRY REGS BEFORE ANY CLOBBERING MACRO ----
+*    R0 = 0 IF SDWA PRESENT (12 IF NOT); R1 -> SDWA; R14 = RTM RET.
+*    WTO/@HEXOUT (SVC 35) DESTROY R0,R1,R15 - CAPTURE THEM FIRST.
+         LR    R2,R1               R2 -> SDWA (PRESERVE BEFORE WTO)
+         LR    R4,R0               R4 = SDWA-PRESENT FLAG
+         LR    R3,R14              R3 = RTM RETURN ADDRESS
+         DROP  R12                 ENTRY R12 IS NOT OUR BASE
+         LARL  R12,ESTDEMO         RE-ESTABLISH PROGRAM BASE (R12)
+         USING ESTDEMO,R12
+         USING SDWA,R2
+         CHI   R4,12               R0=12 MEANS NO SDWA WAS PROVIDED
+         JE    NOSDWA              NO SDWA -> PERCOLATE BARE
+*  ---- FORMAT SDWA: ABEND COMPLETION CODE ----------------------
+*    SDWACMPC IS BL3 = SYSTEM COMPLETION CODE (FIRST 12 BITS) PLUS
+*    USER CODE; THE SYSTEM CODE NIBBLES HOLD THE 0C7.
+         MVC   WTOTXT,MSGCMPC
+         @HEXOUT SDWACMPC,WTOTXT+WCMPCO,LEN=3
+         BAL   R6,PUTWTO
+*  ---- FORMAT SDWA: PSW AT ERROR -------------------------------
+         MVC   WTOTXT,MSGPSW
+         @HEXOUT SDWAEC1,WTOTXT+WPSWO,LEN=8
+         BAL   R6,PUTWTO
+*  ---- REQUEST RETRY (PERCOLATE PATH ADDED IN TASK 4) ----------
+         LR    R1,R2               SETRP NEEDS R1 -> SDWA
+         SETRP RC=4,RETADDR=RETRYPT,RETREGS=YES,FRESDWA=YES
+         LR    R14,R3              RESTORE RTM RETURN ADDRESS
+         BR    R14
+NOSDWA   DS    0H
+         WTO   'ESTDEMO: NO SDWA - PERCOLATING',ROUTCDE=(11)
+         LR    R14,R3              RESTORE RTM RETURN ADDRESS
+         BR    R14
+         DROP  R2
+         DROP  R12
 *=====================================================================
 * DATA
 *=====================================================================
@@ -73,10 +118,16 @@ WTOTXT   EQU   WTOLIST+4,71        TEXT FIELD = AFTER LEN(2)+FLAGS(2)
 *  PIN: +4 = AL2(len)+AL2(flags) before the text; verified against
 *       expanded WTOLIST in listing. Re-check if macro prefix changes.
 MSGBAD   DC    CL71'ESTDEMO: BAD/MISSING PARM - USE RETRY OR PERCOLATE'
-MSGTRY   DC    CL71'ESTDEMO: ABOUT TO EXECUTE CVB ON INVALID PACKED'
+MSGTRY   DC    CL71'ESTDEMO: ABOUT TO RUN CVB ON BAD PACKED DATA'
 MSGNORC  DC    CL71'ESTDEMO: CVB DID NOT FAULT - UNEXPECTED'
+MSGREC   DC    CL71'ESTDEMO: RECOVERED VIA ESTAE, CONTINUING'
+MSGCMPC  DC    CL71'ESTDEMO SDWA  COMPCODE=......'
+WCMPCO   EQU   23                  OFFSET OF COMP-CODE HEX IN MSGCMPC
+MSGPSW   DC    CL71'ESTDEMO SDWA  PSW=................'
+WPSWO    EQU   18                  OFFSET OF PSW HEX IN MSGPSW
          DS    0D
 BADPACK  DC    X'1234567ABCDEF00C'  INVALID DIGITS (A-F) -> S0C7
+PGMBASEA DC    A(ESTDEMO)          CSECT BASE, PASSED TO EXIT VIA PARAM
          @HEXOUT MODE=DEFINE
          LTORG
 R0       EQU   0
@@ -95,4 +146,5 @@ R12      EQU   12
 R13      EQU   13
 R14      EQU   14
 R15      EQU   15
+         IHASDWA
          END   ESTDEMO
