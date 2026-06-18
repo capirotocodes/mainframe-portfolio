@@ -1,5 +1,7 @@
-//CBWALKB  JOB (ACCT),'BUILD CBWALK',CLASS=A,MSGCLASS=H,
-//             NOTIFY=&SYSUID
+//CBWALK   JOB AMS-CLEAN,
+//             ANDRE,
+//             NOTIFY=ANDRE,CLASS=A,
+//             MSGLEVEL=(1,1)
 //*-------------------------------------------------------------------
 //* Assemble, link-edit, and run CBWALK (control block walker).
 //* PREREQ: src\CBWALK.asm uploaded as ANDRE.EPE.ASM(CBWALK).

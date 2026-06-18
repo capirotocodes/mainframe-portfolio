@@ -1,5 +1,7 @@
-//DEMOSPB  JOB (ACCT),'BUILD DEMOSP',CLASS=A,MSGCLASS=H,
-//             NOTIFY=&SYSUID
+//DEMOSP   JOB AMS-CLEAN,
+//             ANDRE,
+//             NOTIFY=ANDRE,CLASS=A,
+//             MSGLEVEL=(1,1)
 //*-------------------------------------------------------------------
 //* Assemble, link-edit, and run DEMOSP, the structured-programming
 //* demo that exercises the personal macro library.

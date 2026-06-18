@@ -1,5 +1,7 @@
-//DEMOALLC JOB (ACCT),'ALLOC LIBS',CLASS=A,MSGCLASS=H,
-//             NOTIFY=&SYSUID
+//EPEALLOC JOB AMS-CLEAN,
+//             ANDRE,
+//             NOTIFY=ANDRE,CLASS=A,
+//             MSGLEVEL=(1,1)
 //*-------------------------------------------------------------------
 //* One-time bootstrap allocation of the libraries BUILDEX.jcl expects.
 //*

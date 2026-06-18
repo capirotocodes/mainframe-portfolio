@@ -1,5 +1,7 @@
-//SOSCRAPB JOB (ACCT),'BUILD SOSCRAPE',CLASS=A,MSGCLASS=H,
-//             NOTIFY=&SYSUID
+//SOSCRAPE JOB AMS-CLEAN,
+//             ANDRE,
+//             NOTIFY=ANDRE,CLASS=A,
+//             MSGLEVEL=(1,1)
 //*-------------------------------------------------------------------
 //* Assemble, link-edit, build a sample input dataset, and run the
 //* JES2 SYSOUT scraper.  The RUN step allocates SCRAPIN and SCRAPOUT
