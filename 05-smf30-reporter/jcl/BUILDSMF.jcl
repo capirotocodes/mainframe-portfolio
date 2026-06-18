@@ -1,4 +1,4 @@
-//ANDREB    JOB AMS-CLEAN,
+//SMFBUILD JOB AMS-CLEAN,
 //             ANDRE,
 //             NOTIFY=ANDRE,CLASS=A,
 //             MSGLEVEL=(1,1)
