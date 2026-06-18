@@ -19,7 +19,7 @@ reading the SDWA out of a dump, the program reads it live and reports it.
    set up invalid packed data  ->  CVB/AP  ->  S0C7  (data exception)
         |
         v   (control -> RECVEXIT, R1 -> SDWA)
-   RECVEXIT: re-establish addressability (SDWAPARM) -> format SDWA -> WTO
+   RECVEXIT: re-establish addressability (LARL) -> format SDWA -> WTO
              SETRP RETRY  : RC=4, RETADDR=RETRYPT, restore regs
              SETRP PERCOL : RC=0  (do not suppress), DUMP=NO
         |
@@ -53,48 +53,70 @@ reading the SDWA out of a dump, the program reads it live and reports it.
 
 | Reg | Role |
 |-----|------|
-| R12 | program base (established by `@ENTER`) |
+| R12 | program base (set by `@ENTER`; re-established in the exit via `LARL`) |
 | R13 | save area (chained by `@ENTER`) |
-| R11 | recovery routine's base (re-established from `SDWAPARM`) |
-| R2  | SDWA base in the recovery routine (`USING SDWA,R2`) |
-| R3-R5 | scratch for formatting SDWA fields |
+| R2  | SDWA base in the recovery routine (`USING SDWA,R2`, R2 from entry R1) |
+| R3  | saved RTM return address (entry R14) inside the exit |
+| R4  | saved SDWA-present flag (entry R0) inside the exit |
+| R5  | CVB target in the mainline; scratch |
 | R6  | link register for the WTO helper |
 | R0,R1,R14,R15 | volatile across `@HEXOUT`, `WTO`, `ESTAEX`, `SETRP` |
 
 ## Establishing the recovery routine
 
-`ESTAEX RECVEXIT,PARAM=WORKAREA,...` is used in preference to plain `ESTAE`
-because the program is AMODE 31: `ESTAEX` is the current macro, callable in
-31-bit mode, and supported for above-the-line callers.
+`ESTAEX RECVEXIT` is used in preference to plain `ESTAE` because the program
+is AMODE 31: `ESTAEX` is the current macro, callable in 31-bit mode and
+supported for above-the-line callers.
 
-- **PARAM=WORKAREA** — the address passed is delivered to the exit in the
-  SDWA field `SDWAPARM`. The exit uses it to re-establish its own
-  addressability. This is the central teaching point: a recovery routine
-  gets control with an **unknown** base register, so it must not assume the
-  mainline's `R12` survived — it loads its base from the parameter it was
-  given.
 - The exit address `RECVEXIT` is `AL4`-resolvable in the same CSECT.
-- The token returned by `ESTAEX` is saved so the mainline can cancel the
-  recovery (`ESTAEX 0`) on the normal RETRY exit before `@LEAVE`.
+- On the normal RETRY path the recovery is cancelled with `ESTAEX 0` before
+  `@LEAVE`, so a clean continuation is not protected by a stale exit.
+
+### Re-establishing the base in the exit — `LARL`, not `SDWAPARM`
+
+A recovery routine gets control with **no usable base register** — it must
+not assume the mainline's `R12` survived. The classical technique is to pass
+the program base via `PARAM=` and recover it in the exit from the SDWA field
+`SDWAPARM`. That was the original design here, and it did **not** work on this
+system: with standard-form `ESTAEX RECVEXIT,PARAM=PGMBASEA`, `SDWAPARM` did
+not contain the passed address. Verified empirically by WTO-dumping the field
+at run time (dumps are installation-suppressed, so the SDWA was inspected
+live in the exit rather than from a dump):
+
+```
+SDWAPARM    = 10901B0C     <- not the address that was passed
+A(PGMBASEA) = 10900EE0
+A(ESTDEMO)  = 10900980
+```
+
+So the exit re-establishes its base with **`LARL R12,ESTDEMO`** — a
+PC-relative load of the CSECT's own address, valid in AMODE 31 and
+independent of any register or SDWA state on entry. This is the modern
+z/Architecture idiom, and it is also correct on the **no-SDWA** path (where
+there is no `SDWAPARM` to read). `RETRYPT` re-establishes the base the same
+way, because `RETREGS=YES` restores the abend-time registers, not a
+guaranteed base.
 
 ## Triggering the abend (S0C7)
 
-A small static area holds **invalid packed-decimal** data — a field whose
-digit nibbles are not all valid decimal digits (e.g.
-`BADPACK DC X'1234ABCD'`, where `A`/`B`/`C` are not `0`-`9`). A `CVB` (or
-`AP`) against that field raises a **data exception (S0C7)**. The failing
-instruction is isolated on its own line so the listing offset is obvious and
-matches the address the recovery routine reports.
+A doubleword-aligned static field holds **invalid packed-decimal** data —
+`BADPACK DC X'1234567ABCDEF00C'` — whose digit nibbles include non-decimal
+values (`A`-`F` in digit positions). `CVB` reads a full doubleword, and the
+invalid digits raise a **data exception (S0C7)**. The `CVB` is isolated on
+its own line so the listing offset is obvious and matches the failing
+address the recovery routine reports.
 
 ## The recovery routine (RECVEXIT)
 
 Entered by RTM with R0/R1 conventions per `ESTAEX`: **R1 -> SDWA** (when one
 is provided). Steps:
 
-1. **Addressability** — `USING SDWA,R2` (R2 from R1); load R11 (recovery
-   base) from `SDWAPARM` so labels and the WTO helper resolve. Handle the
-   "no SDWA" case (R0 = X'0C' / R15 flag per the macro) defensively with a
-   bare `WTO` and percolate.
+1. **Save volatile entry regs, then addressability** — entry R1 -> SDWA,
+   R0 = SDWA-present flag, R14 = RTM return; capture them first (into R2, R4,
+   R3) because `WTO`/`@HEXOUT` (SVC 35) clobber R0/R1/R15. Re-establish the
+   base with `LARL R12,ESTDEMO` (see above), then `USING SDWA,R2`. The
+   "no SDWA" case (R0 = 12) is tested **before** any SDWA access and handled
+   with a bare `WTO` + percolate.
 2. **Format the SDWA** (with `@HEXOUT`) into a WTO report — intended fields
    (exact `IHASDWA` spellings pinned against the live macro at
    implementation):
