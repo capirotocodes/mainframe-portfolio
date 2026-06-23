@@ -1,0 +1,158 @@
+---
+# Ansible Playbook: Compile Assembler Program via CLIST
+# Submits JCL that invokes the COMPILE CLIST to assemble and link-edit
+
+- name: Compile Assembler Program
+  hosts: localhost
+  gather_facts: true
+  connection: local
+
+  vars:
+    zmf_host: "9.12.19.209"
+    zmf_port: 443
+    zmf_user: "ANDRE"
+    zmf_password: "{{ lookup('env', 'ZOS_PASSWORD') }}"
+    jcl_file: "/z/andre/COMPASM.jcl"
+    asm_member: "MYPROG"
+
+  tasks:
+    - name: Display compilation plan
+      ansible.builtin.debug:
+        msg:
+          - "Compiling assembler program: {{ asm_member }}"
+          - "Using COMPILE CLIST via JCL: {{ jcl_file }}"
+          - "Target z/OSMF host: {{ zmf_host }}"
+
+    - name: Upload JCL to USS if not already there
+      ansible.builtin.uri:
+        url: "https://{{ zmf_host }}:{{ zmf_port }}/zosmf/restfiles/fs{{ jcl_file }}"
+        method: PUT
+        user: "{{ zmf_user }}"
+        password: "{{ zmf_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        body: "{{ lookup('file', '../COMPASM.jcl') }}"
+        headers:
+          Content-Type: "text/plain; charset=UTF-8"
+          X-IBM-Data-Type: "text;fileEncoding=UTF-8"
+        status_code: [200, 201, 204]
+      register: upload_result
+
+    - name: Display upload result
+      ansible.builtin.debug:
+        msg: "JCL uploaded successfully to {{ jcl_file }}"
+
+    - name: Read JCL content
+      ansible.builtin.slurp:
+        src: "../COMPASM.jcl"
+      register: jcl_content
+      delegate_to: localhost
+
+    - name: Submit compilation JCL
+      ansible.builtin.uri:
+        url: "https://{{ zmf_host }}:{{ zmf_port }}/zosmf/restjobs/jobs"
+        method: PUT
+        user: "{{ zmf_user }}"
+        password: "{{ zmf_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        body: "{{ jcl_content.content | b64decode }}"
+        headers:
+          Content-Type: "text/plain"
+        status_code: [200, 201]
+        return_content: true
+      register: submit_result
+
+    - name: Display job submission result
+      ansible.builtin.debug:
+        msg:
+          - "=========================================="
+          - "Compilation Job Submitted!"
+          - "=========================================="
+          - "Job name: {{ submit_result.json.jobname | default('N/A') }}"
+          - "Job ID: {{ submit_result.json.jobid | default('N/A') }}"
+          - "Owner: {{ submit_result.json.owner | default('N/A') }}"
+          - "Status: {{ submit_result.json.status | default('N/A') }}"
+          - "=========================================="
+
+    - name: Wait for job completion
+      ansible.builtin.uri:
+        url: "https://{{ zmf_host }}:{{ zmf_port }}/zosmf/restjobs/jobs/{{ submit_result.json.jobname }}/{{ submit_result.json.jobid }}"
+        method: GET
+        user: "{{ zmf_user }}"
+        password: "{{ zmf_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        return_content: true
+      register: job_status
+      until: job_status.json.status == "OUTPUT"
+      retries: 30
+      delay: 2
+
+    - name: Display final job status
+      ansible.builtin.debug:
+        msg:
+          - "=========================================="
+          - "Compilation Complete!"
+          - "=========================================="
+          - "Job ID: {{ job_status.json.jobid }}"
+          - "Return Code: {{ job_status.json.retcode | default('N/A') }}"
+          - "Status: {{ job_status.json.status }}"
+          - "=========================================="
+
+    - name: Get job output files list
+      ansible.builtin.uri:
+        url: "https://{{ zmf_host }}:{{ zmf_port }}/zosmf/restjobs/jobs/{{ submit_result.json.jobname }}/{{ submit_result.json.jobid }}/files"
+        method: GET
+        user: "{{ zmf_user }}"
+        password: "{{ zmf_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        return_content: true
+      register: job_files
+
+    - name: Display job output files
+      ansible.builtin.debug:
+        msg: "{{ job_files.json }}"
+
+    - name: Get SYSTSPRT output
+      ansible.builtin.uri:
+        url: "https://{{ zmf_host }}:{{ zmf_port }}/zosmf/restjobs/jobs/{{ submit_result.json.jobname }}/{{ submit_result.json.jobid }}/files/{{ item.id }}/records"
+        method: GET
+        user: "{{ zmf_user }}"
+        password: "{{ zmf_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        return_content: true
+      loop: "{{ job_files.json }}"
+      when: "'SYSTSPRT' in item.ddname or 'JESMSGLG' in item.ddname"
+      register: job_output
+
+    - name: Display job output
+      ansible.builtin.debug:
+        msg: "{{ item.content }}"
+      loop: "{{ job_output.results }}"
+      when: item.content is defined
+
+    - name: Save compilation summary
+      ansible.builtin.copy:
+        dest: "../workflows/last_compile_info.txt"
+        content: |
+          Assembler Compilation Summary
+          =============================
+          Member: {{ asm_member }}
+          Job name: {{ submit_result.json.jobname | default('N/A') }}
+          Job ID: {{ submit_result.json.jobid | default('N/A') }}
+          Return Code: {{ job_status.json.retcode | default('N/A') }}
+          Status: {{ job_status.json.status }}
+          Timestamp: {{ ansible_date_time.iso8601 }}
+      delegate_to: localhost
+
+    - name: Check if compilation was successful
+      ansible.builtin.fail:
+        msg: "Compilation failed with return code: {{ job_status.json.retcode }}"
+      when:
+        - job_status.json.retcode is defined
+        - job_status.json.retcode != "CC 0000"
+        - not job_status.json.retcode.startswith("CC 0004")
+# Made with Bob

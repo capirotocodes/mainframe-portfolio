@@ -1,0 +1,10 @@
+//ANDREB   JOB AMS-CLEAN,ANDRE,NOTIFY=ANDRE,CLASS=A,MSGLEVEL=(1,1)
+//STEP1    EXEC PGM=IEFBR14
+//JCLLIB   DD  DSN=ANDRE.DEMO.JCLLIB,
+//             DISP=(NEW,CATLG,DELETE),
+//             UNIT=SYSDA,
+//             VOL=SER=USER01,
+//             SPACE=(CYL,(3,1,20)),
+//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=27920)
+
+//* Made with Bob

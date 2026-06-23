@@ -1,0 +1,79 @@
+---
+# Ansible Playbook: Submit z/OS JCL directly through z/OSMF REST APIs
+# Submits USS-based JCL files in sequence and reports returned job IDs.
+
+- name: Submit z/OS JCL directly
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  vars:
+    zmf_host: "9.12.19.209"
+    zmf_port: 443
+    zmf_user: "ANDRE"
+    zmf_password: "{{ lookup('env', 'ZOS_PASSWORD') }}"
+    jcl_files:
+      - name: ALLOCS
+        path: /z/andre/ALLOCS.jcl
+      - name: ALLOCL
+        path: /z/andre/ALLOCL.jcl
+      - name: ALLOCJ
+        path: /z/andre/ALLOCJ.jcl
+      - name: VERIFY
+        path: /z/andre/VERIFY.jcl
+
+  tasks:
+    - name: Display submission plan
+      ansible.builtin.debug:
+        msg:
+          - "Submitting {{ jcl_files | length }} JCL files through z/OSMF"
+          - "Target z/OSMF host: {{ zmf_host }}"
+
+    - name: Submit JCL files from USS
+      ansible.builtin.uri:
+        url: "https://{{ zmf_host }}:{{ zmf_port }}/zosmf/restjobs/jobs"
+        method: PUT
+        user: "{{ zmf_user }}"
+        password: "{{ zmf_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        body_format: json
+        body:
+          file: "{{ item.path }}"
+        status_code: [200, 201]
+        return_content: true
+      loop: "{{ jcl_files }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: submit_results
+
+    - name: Display submission results
+      ansible.builtin.debug:
+        msg:
+          - "Step: {{ item.item.name }}"
+          - "USS file: {{ item.item.path }}"
+          - "Job name: {{ item.json.jobname | default('N/A') }}"
+          - "Job ID: {{ item.json.jobid | default('N/A') }}"
+          - "Owner: {{ item.json.owner | default('N/A') }}"
+          - "Status: {{ item.json.status | default('N/A') }}"
+      loop: "{{ submit_results.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+
+    - name: Save submission summary
+      ansible.builtin.copy:
+        dest: "../workflows/last_direct_submit_info.txt"
+        content: |
+          Direct JCL submission summary
+          =============================
+          {% for result in submit_results.results %}
+          Step: {{ result.item.name }}
+          USS file: {{ result.item.path }}
+          Job name: {{ result.json.jobname | default('N/A') }}
+          Job ID: {{ result.json.jobid | default('N/A') }}
+          Owner: {{ result.json.owner | default('N/A') }}
+          Status: {{ result.json.status | default('N/A') }}
+
+          {% endfor %}
+      delegate_to: localhost
+# Made with Bob

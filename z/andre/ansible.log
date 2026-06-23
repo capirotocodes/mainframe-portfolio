@@ -1,0 +1,58 @@
+2026-06-22 11:58:29,905 p=4054 u=andrenpc n=ansible INFO| PLAY [Submit z/OS JCL directly] ************************************************
+2026-06-22 11:58:29,973 p=4054 u=andrenpc n=ansible INFO| TASK [Display submission plan] *************************************************
+2026-06-22 11:58:30,161 p=4054 u=andrenpc n=ansible INFO| ok: [localhost] => {
+    "msg": [
+        "Submitting 4 JCL files through z/OSMF",
+        "Target z/OSMF host: 9.12.19.209"
+    ]
+}
+2026-06-22 11:58:30,176 p=4054 u=andrenpc n=ansible INFO| TASK [Submit JCL files from USS] ***********************************************
+2026-06-22 11:58:31,812 p=4054 u=andrenpc n=ansible INFO| ok: [localhost] => (item=ALLOCS)
+2026-06-22 11:58:33,735 p=4054 u=andrenpc n=ansible INFO| ok: [localhost] => (item=ALLOCL)
+2026-06-22 11:58:35,769 p=4054 u=andrenpc n=ansible INFO| ok: [localhost] => (item=ALLOCJ)
+2026-06-22 11:58:37,785 p=4054 u=andrenpc n=ansible INFO| ok: [localhost] => (item=VERIFY)
+2026-06-22 11:58:37,799 p=4054 u=andrenpc n=ansible INFO| TASK [Display submission results] **********************************************
+2026-06-22 11:58:37,863 p=4054 u=andrenpc n=ansible INFO| ok: [localhost] => (item=ALLOCS) => {
+    "msg": [
+        "Step: ALLOCS",
+        "USS file: /z/andre/ALLOCS.jcl",
+        "Job name: ANDREB",
+        "Job ID: JOB01206",
+        "Owner: ANDRE",
+        "Status: INPUT"
+    ]
+}
+2026-06-22 11:58:37,874 p=4054 u=andrenpc n=ansible INFO| ok: [localhost] => (item=ALLOCL) => {
+    "msg": [
+        "Step: ALLOCL",
+        "USS file: /z/andre/ALLOCL.jcl",
+        "Job name: ANDREB",
+        "Job ID: JOB01207",
+        "Owner: ",
+        "Status: INPUT"
+    ]
+}
+2026-06-22 11:58:37,890 p=4054 u=andrenpc n=ansible INFO| ok: [localhost] => (item=ALLOCJ) => {
+    "msg": [
+        "Step: ALLOCJ",
+        "USS file: /z/andre/ALLOCJ.jcl",
+        "Job name: ANDREB",
+        "Job ID: JOB01209",
+        "Owner: ANDRE",
+        "Status: INPUT"
+    ]
+}
+2026-06-22 11:58:37,903 p=4054 u=andrenpc n=ansible INFO| ok: [localhost] => (item=VERIFY) => {
+    "msg": [
+        "Step: VERIFY",
+        "USS file: /z/andre/VERIFY.jcl",
+        "Job name: ANDREB",
+        "Job ID: JOB01210",
+        "Owner: ANDRE",
+        "Status: INPUT"
+    ]
+}
+2026-06-22 11:58:37,934 p=4054 u=andrenpc n=ansible INFO| TASK [Save submission summary] *************************************************
+2026-06-22 11:58:39,241 p=4054 u=andrenpc n=ansible INFO| changed: [localhost]
+2026-06-22 11:58:39,244 p=4054 u=andrenpc n=ansible INFO| PLAY RECAP *********************************************************************
+2026-06-22 11:58:39,245 p=4054 u=andrenpc n=ansible INFO| localhost                  : ok=4    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   

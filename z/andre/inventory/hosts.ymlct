@@ -1,0 +1,29 @@
+---
+# Ansible Inventory for z/OS Sandbox
+# Update the values below with your actual z/OS system details
+
+all:
+  children:
+    zos_systems:
+      hosts:
+        zos_sandbox:
+          ansible_host: your-zos-hostname.example.com
+          ansible_user: ANDRE
+          ansible_python_interpreter: /usr/lpp/IBM/cyp/v3r11/pyz/bin/python3
+
+      vars:
+        # z/OSMF Connection Details
+        zmf_host: your-zosmf-hostname.example.com
+        zmf_port: 443
+        zmf_user: ANDRE
+
+        # SSH Connection (if using direct SSH)
+        ansible_connection: ssh
+        ansible_port: 22
+
+        # z/OS Specific Variables
+        zos_hlq: ANDRE
+        zos_volume: USER01
+
+        # Workflow Directories
+        work

@@ -1,0 +1,11 @@
+//ANDREB   JOB AMS-CLEAN,ANDRE,NOTIFY=ANDRE,CLASS=A,MSGLEVEL=(1,1)
+//STEP1    EXEC PGM=IEFBR14
+//LOADLIB  DD  DSN=ANDRE.DEMO.LOADLIB,
+//             DISP=(NEW,CATLG,DELETE),
+//             UNIT=SYSDA,
+//             VOL=SER=USER01,
+//             SPACE=(CYL,(10,2,50)),
+//             DSNTYPE=LIBRARY,
+//             DCB=(RECFM=U,BLKSIZE=32760)
+
+//* Made with Bob

@@ -1,0 +1,29 @@
+---
+# Group variables for z/OS systems
+# Store sensitive data in ansible-vault or environment variables
+
+# z/OSMF Authentication - reads from ZOS_PASSWORD environment variable
+zmf_password: "{{ lookup('env', 'ZOS_PASSWORD') }}"
+
+# SSH Authentication (if using SSH connection)
+ansible_ssh_pass: "{{ lookup('env', 'ZOS_PASSWORD') }}"
+
+# z/OS Dataset Defaults
+dataset_defaults:
+  type: SEQ
+  space_primary: 5
+  space_secondary: 1
+  space_type: CYL
+  record_format: FB
+  record_length: 80
+  block_size: 27920
+
+# JCL Defaults
+jcl_defaults:
+  job_class: A
+  msg_class: H
+  notify_user: ANDRE
+  region: 0M
+  time: 1440
+
+# Made with Bob
