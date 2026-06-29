@@ -3,9 +3,12 @@
 //             NOTIFY=ANDRE,CLASS=A,
 //             MSGLEVEL=(1,1)
 //*------------------------------------------------------------------*
-//*  RUN ESTDEMO BOTH WAYS.                                          *
-//*  STEP1 PARM=RETRY    - recovers and retries, expect RC 0.        *
-//*  STEP2 PARM=PERC     - recovers and percolates, expect S0C7.     *
+//*  RUN ESTDEMO THREE WAYS.                                         *
+//*  STEP1 PARM=RETRY - recovers and retries once, expect RC 0.      *
+//*  STEP2 PARM=PERC  - recovers and percolates, expect S0C7.        *
+//*  STEP3 PARM=LOOP  - re-drives the failing instruction under a    *
+//*                     bounded retry counter; after MAXRETRY hits    *
+//*                     the guard stops retrying, expect S0C7.        *
 //*  Recovery diagnostics are WTO'd to JESMSGLG (ROUTCDE=11).        *
 //*  SYSUDUMP is coded for portability; on systems that suppress     *
 //*  dumps the WTO lines carry the evidence.                         *
@@ -17,5 +20,11 @@
 //*  Run the percolate variant regardless of STEP1's result.         *
 //*------------------------------------------------------------------*
 //PERC    EXEC PGM=ESTDEMO,PARM=PERC,COND=EVEN
+//STEPLIB  DD  DSN=ANDRE.EPE.LOAD,DISP=SHR
+//SYSUDUMP DD  SYSOUT=*
+//*------------------------------------------------------------------*
+//*  Run the bounded-retry loop variant regardless of prior results. *
+//*------------------------------------------------------------------*
+//LOOP    EXEC PGM=ESTDEMO,PARM=LOOP,COND=EVEN
 //STEPLIB  DD  DSN=ANDRE.EPE.LOAD,DISP=SHR
 //SYSUDUMP DD  SYSOUT=*

@@ -50,6 +50,11 @@ A single program, chosen at run time by the EXEC `PARM`:
 |--------|-----------|-------------|
 | `RETRY` (or blank) | recover → resume past the error | **RC 0** |
 | `PERC` | recover → let the abend stand | **abends S0C7** |
+| `LOOP` | re-drive the failing instruction under a **bounded** retry counter (`MAXRETRY=3`); past the limit, stop and percolate | **abends S0C7** after N bounded retries |
+
+`LOOP` is the production-safety case: a recovery routine that retries a
+*persistent* failure must cap the retries or it loops forever. See
+[docs/DESIGN.md](docs/DESIGN.md#bounded-retry-the-production-safety-point).
 
 In both cases the recovery routine first WTOs the abend completion code
 (`SDWAABCC`), the PSW at the error (`SDWAEC1`), and GPRs 14–15 at the time

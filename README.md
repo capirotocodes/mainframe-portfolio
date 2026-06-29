@@ -13,7 +13,9 @@ read like production code in a code review, not just to run.
 
 For a walkthrough of what each artifact demonstrates — the concepts, the
 deep technical points, and the debugging war stories behind them — see
-[TALKING-POINTS.md](TALKING-POINTS.md).
+[TALKING-POINTS.md](TALKING-POINTS.md). For an honest take on what would
+need to change to run any of this in production, and how to test it on a
+real system, see [PRODUCTION-NOTES.md](PRODUCTION-NOTES.md).
 
 ## What's inside
 
