@@ -210,5 +210,3 @@ WORKLEN  EQU   *-WORKAREA           Work area length
 //SYSUT1   DD UNIT=SYSDA,SPACE=(CYL,(5,2))
 //SYSPRINT DD SYSOUT=*
 //*
-
-//* Made with Bob

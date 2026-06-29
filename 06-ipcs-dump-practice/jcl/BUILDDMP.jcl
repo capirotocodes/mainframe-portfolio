@@ -1,6 +1,7 @@
-//BUILDDMP JOB (ACCT),'BUILD DUMPPGM',
-//         CLASS=A,MSGCLASS=H,NOTIFY=&SYSUID,
-//         MSGLEVEL=(1,1),REGION=0M
+//BUILDDMP JOB AMS-CLEAN,
+//             ANDRE,
+//             NOTIFY=ANDRE,CLASS=A,
+//             MSGLEVEL=(1,1),REGION=0M
 //*
 //*********************************************************************
 //* JOB:     BUILDDMP                                                 *
@@ -16,14 +17,12 @@
 //SYSPRINT DD SYSOUT=*
 //SYSLIN   DD UNIT=SYSDA,SPACE=(TRK,(5,5)),
 //            DISP=(NEW,PASS),DSN=&&OBJMOD
-//SYSIN    DD DISP=SHR,DSN=&SYSUID..SOURCE.ASM(DUMPPGM)
+//SYSIN    DD DISP=SHR,DSN=ANDRE.EPE.ASM(DUMPPGM)
 //*
 //LKED     EXEC PGM=IEWL,PARM='MAP,LIST,LET,RENT,REUS,REFR',
 //         COND=(0,NE,ASM)
 //SYSLIN   DD DISP=(OLD,DELETE),DSN=&&OBJMOD
-//SYSLMOD  DD DISP=SHR,DSN=&SYSUID..LOAD.LIB(DUMPPGM)
+//SYSLMOD  DD DISP=SHR,DSN=ANDRE.EPE.LOAD(DUMPPGM)
 //SYSUT1   DD UNIT=SYSDA,SPACE=(CYL,(5,2))
 //SYSPRINT DD SYSOUT=*
 //*
-
-//* Made with Bob

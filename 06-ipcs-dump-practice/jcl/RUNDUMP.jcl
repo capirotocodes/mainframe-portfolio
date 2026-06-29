@@ -1,6 +1,7 @@
-//RUNDUMP  JOB (ACCT),'RUN DUMPPGM',
-//         CLASS=A,MSGCLASS=H,NOTIFY=&SYSUID,
-//         MSGLEVEL=(1,1),REGION=0M
+//RUNDUMP  JOB AMS-CLEAN,
+//             ANDRE,
+//             NOTIFY=ANDRE,CLASS=A,
+//             MSGLEVEL=(1,1),REGION=0M
 //*
 //*********************************************************************
 //* JOB:     RUNDUMP                                                  *
@@ -16,7 +17,7 @@
 //STEPLIB  DD DISP=SHR,DSN=ANDRE.EPE.LOAD
 //SYSOUT   DD SYSOUT=*
 //SYSPRINT DD SYSOUT=*
-//SYSABEND DD DISP=(NEW,CATLG,CATLG),
+//SYSABEND DD DISP=(MOD,CATLG,CATLG),
 //            DSN=ANDRE.IPCS.ABEND,
 //            UNIT=SYSDA,
 //            SPACE=(CYL,(50,10),RLSE),
@@ -31,5 +32,3 @@
 //*            SPACE=(CYL,(15,10),RLSE),
 //*            DCB=(RECFM=VBS,LRECL=4160,BLKSIZE=4164)
 //*
-
-//* Made with Bob

@@ -8,5 +8,3 @@
 //SYSTSIN  DD *
   %COMPILE MEMBER(MYPROG) CLASS(A) SYSOUT(W) RENT(N)
 /*
-
-//* Made with Bob

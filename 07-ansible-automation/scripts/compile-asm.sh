@@ -48,5 +48,3 @@ ansible-playbook playbooks/compile_assembler.yml
 echo ""
 echo "=== Compilation Complete ==="
 echo "Check workflows/last_compile_info.txt for details"
-
-# Made with Bob

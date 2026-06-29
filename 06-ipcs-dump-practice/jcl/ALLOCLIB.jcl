@@ -10,5 +10,3 @@
 //            SPACE=(TRK,(10,5,5)),
 //            DCB=(RECFM=U,BLKSIZE=32760,LRECL=0,DSORG=PO)
 //*
-
-//* Made with Bob

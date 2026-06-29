@@ -1,7 +1,7 @@
 ***********************************************************************
 * PROGRAM:    DUMPPGM                                                 *
 * PURPOSE:    Generate a system dump for IPCS practice               *
-* AUTHOR:     Bob                                                     *
+* AUTHOR:     Andre                                                     *
 * DATE:       2026-06-18                                              *
 *                                                                     *
 * DESCRIPTION:                                                        *
@@ -20,6 +20,23 @@
 *   Run via JCL with SYSUDUMP or SYSABEND DD statement              *
 ***********************************************************************
          TITLE 'DUMPPGM - System Dump Generator for IPCS Practice'
+*
+R0       EQU   0
+R1       EQU   1
+R2       EQU   2
+R3       EQU   3
+R4       EQU   4
+R5       EQU   5
+R6       EQU   6
+R7       EQU   7
+R8       EQU   8
+R9       EQU   9
+R10      EQU   10
+R11      EQU   11
+R12      EQU   12
+R13      EQU   13
+R14      EQU   14
+R15      EQU   15
 *
 DUMPPGM  CSECT
 DUMPPGM  AMODE 31
@@ -144,10 +161,8 @@ FILLLOOP DS    0H
 *
 * Add some text strings
 *
-         MVC   BUFFER(50),=C'This is sample data for IPCS dump analysiX
-               s practice'
-         MVC   BUFFER+100(40),=C'Look for this string in the dump fileX
-               !'
+         MVC   BUFFER(L'TEXT1),TEXT1
+         MVC   BUFFER+100(L'TEXT2),TEXT2
 *
          L     R14,RETADDR          Restore return address
          BR    R14                  Return
@@ -155,6 +170,8 @@ FILLLOOP DS    0H
 ***********************************************************************
 * Constants and Literals                                             *
 ***********************************************************************
+TEXT1    DC    C'This is sample data for IPCS dump practice'
+TEXT2    DC    C'Look for this string in the dump file!'
          LTORG
 *
 ***********************************************************************
@@ -200,5 +217,3 @@ BUFLEN   EQU   256                  Buffer length
 WORKLEN  EQU   *-WORKAREA           Work area length
 *
          END   DUMPPGM
-
-* Made with Bob

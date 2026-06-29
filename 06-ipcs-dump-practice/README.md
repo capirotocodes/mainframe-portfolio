@@ -63,3 +63,9 @@ It then issues `ABEND 13,DUMP` — a **U0013** abend that produces the dump.
 - Locating data structures by eye-catcher and walking pointer chains.
 - Producing a controlled abend (`ABEND ...,DUMP`) for problem-determination
   practice.
+
+**Status: built and verified on a real z/OS system** — `BUILDDMP.jcl`
+assembles and links clean (CC 0000) and `RUNDUMP.jcl` abends **U0013** as
+designed, capturing the dump to `ANDRE.IPCS.ABEND`. (The program was made
+assemble-clean in the process: it had been missing its `R0`–`R15` register
+equates and used a fragile inline literal continuation; both are fixed.)

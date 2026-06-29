@@ -31,7 +31,7 @@
         password: "{{ zmf_password }}"
         force_basic_auth: true
         validate_certs: false
-        body: "{{ lookup('file', '../COMPASM.jcl') }}"
+        body: "{{ lookup('file', '../jcl/COMPASM.jcl') }}"
         headers:
           Content-Type: "text/plain; charset=UTF-8"
           X-IBM-Data-Type: "text;fileEncoding=UTF-8"
@@ -44,7 +44,7 @@
 
     - name: Read JCL content
       ansible.builtin.slurp:
-        src: "../COMPASM.jcl"
+        src: "../jcl/COMPASM.jcl"
       register: jcl_content
       delegate_to: localhost
 
@@ -155,4 +155,3 @@
         - job_status.json.retcode is defined
         - job_status.json.retcode != "CC 0000"
         - not job_status.json.retcode.startswith("CC 0004")
-# Made with Bob

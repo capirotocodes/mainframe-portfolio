@@ -34,5 +34,3 @@ echo ""
 echo "=== Ready to run playbooks ==="
 echo "Available playbooks:"
 ls ~/andre/playbooks/*.yml
-
-# Made with Bob

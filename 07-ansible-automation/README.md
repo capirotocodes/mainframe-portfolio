@@ -58,6 +58,13 @@ Designed to run from Linux or Windows via WSL.
   recorded run summary.
 - Keeping credentials out of source (environment-supplied password).
 
+**Status** — the compile JCL the playbook drives (`jcl/COMPASM.jcl`) is
+verified on a real z/OS system: it invokes the COMPILE CLIST and returns
+**CC 0000**. The playbook's own dry mechanics are corrected here too (the
+JCL file lookup path was pointing at the wrong directory). Running the full
+Ansible flow requires `ZOS_PASSWORD` and an Ansible control host, so it is
+driven by the user rather than exercised in this repo.
+
 > Note: this artifact's playbook talks to z/OSMF directly with
 > `ansible.builtin.uri`. A more production-grade path is the IBM
 > `ibm.ibm_zosmf` collection (`zmf_workflow*`); that approach is explored

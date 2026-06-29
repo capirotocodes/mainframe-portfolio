@@ -38,5 +38,3 @@
 //* WHERE - Show location of failure
 //* LISTSYM - List symbols
 //*
-
-//* Made with Bob
