@@ -1,76 +1,64 @@
-# Ansible Automation for z/OS Assembler Compilation
+# 07 — Ansible Automation (z/OSMF REST)
 
-Automated compilation of mainframe assembler programs using Ansible and z/OSMF REST APIs.
+Driving a z/OS assembler build from **Ansible** through the **z/OSMF REST
+API** — submit the compile/link JCL, poll the job to completion, and pull
+back its output — so mainframe assembly fits into the same automation
+tooling as the rest of an estate. The DevOps-on-z/OS counterpart to the
+hand-run JCL in the other artifacts.
 
-## Overview
+## Purpose
 
-This project demonstrates how to automate z/OS assembler program compilation using Ansible playbooks. It eliminates manual JCL submission by integrating with z/OSMF REST APIs, enabling CI/CD pipelines for mainframe development.
+Show that a traditional HLASM assemble/link can be invoked, monitored, and
+reported on without manual JES interaction: one `ansible-playbook` run does
+upload → submit → wait → fetch output → record a summary, and fails the
+play if the job's return code is not clean.
 
-## Features
+## How it works
 
-- ✅ **Automated JCL Submission**: Submit compilation jobs via Ansible
-- ✅ **CLIST Integration**: Leverages existing COMPILE CLIST for assembly and link-edit
-- ✅ **Job Monitoring**: Waits for job completion and reports results
-- ✅ **Error Handling**: Captures and displays job output for debugging
-- ✅ **Cross-Platform**: Runs from Windows via WSL or native Linux
+`playbooks/compile_assembler.yml` talks to z/OSMF over REST (`ansible.
+builtin.uri`):
 
-## Quick Start
+1. Upload the compile JCL to USS (`/zosmf/restfiles/fs…`).
+2. Submit it as a job (`PUT /zosmf/restjobs/jobs`).
+3. Poll the job until `status == OUTPUT` (`until/retries/delay`).
+4. Retrieve the job's spool files and echo `SYSTSPRT` / `JESMSGLG`.
+5. Write a summary to `workflows/last_compile_info.txt` and **fail the
+   play** unless the return code is `CC 0000` (or `CC 0004`).
 
-### 1. Set Password
-
-```bash
-export ZOS_PASSWORD='your_password'
-```
-
-### 2. Run Compilation
-
-```bash
-cd scripts
-bash compile-asm.sh
-```
-
-### 3. Check Results
-
-```bash
-cat ../workflows/last_compile_info.txt
-```
+The JCL itself (`jcl/COMPASM.jcl`) invokes the site COMPILE CLIST to
+assemble and link-edit the target member.
 
 ## Files
 
-- **jcl/COMPASM.jcl**: JCL that invokes COMPILE CLIST
-- **playbooks/compile_assembler.yml**: Ansible playbook for automation
-- **scripts/compile-asm.sh**: Helper script for easy execution
-- **scripts/sync-and-run.sh**: Syncs files from Windows to WSL
+| File | What it is |
+|------|------------|
+| `playbooks/compile_assembler.yml` | The playbook — REST submit/poll/report. |
+| `jcl/COMPASM.jcl` | Compile/link JCL (invokes the COMPILE CLIST). |
+| `scripts/compile-asm.sh` | Convenience wrapper to run the playbook. |
+| `scripts/sync-and-run.sh` | Sync files into WSL and run. |
+| `QUICKSTART.md` / `docs/DESIGN.md` | Setup and architecture. |
 
-## How It Works
+## Running it
 
-1. **Sync Files**: Copies latest JCL and playbooks to WSL
-2. **Read JCL**: Ansible reads COMPASM.jcl content
-3. **Submit Job**: Sends JCL to z/OSMF REST API
-4. **Execute**: z/OS runs job, invoking COMPILE CLIST
-5. **Monitor**: Ansible polls job status every 2 seconds
-6. **Report**: Displays job ID, return code, and output
-7. **Save**: Writes summary to workflows/last_compile_info.txt
+```bash
+export ZOS_PASSWORD='…'          # credentials come from the environment
+cd 07-ansible-automation/scripts
+bash compile-asm.sh
+```
 
-## Documentation
+Connection settings (z/OSMF host/port/user) live in the playbook `vars`;
+the password is read from `$ZOS_PASSWORD`, never stored in the repo.
+Designed to run from Linux or Windows via WSL.
 
-- [QUICKSTART.md](QUICKSTART.md) - Get started in 5 minutes
-- [docs/DESIGN.md](docs/DESIGN.md) - Technical architecture and design
+## Skills demonstrated
 
-## Successfully Tested
+- z/OSMF REST API: REST file upload, job submit, status polling, and
+  spool-file retrieval.
+- Ansible orchestration of a mainframe build with return-code gating and a
+  recorded run summary.
+- Keeping credentials out of source (environment-supplied password).
 
-✅ Compiled MYPROG via Ansible automation
-✅ Job submitted and monitored automatically  
-✅ Return code CC 0000 (success)
-✅ Load module created in ANDRE.EPE.LOAD
-
-## Benefits
-
-- **Speed**: Automated compilation in seconds
-- **Consistency**: Same process every time
-- **Integration**: Works with modern DevOps tools
-- **Auditability**: All actions logged
-
----
-
-_Demonstrating modern DevOps practices on the mainframe_
+> Note: this artifact's playbook talks to z/OSMF directly with
+> `ansible.builtin.uri`. A more production-grade path is the IBM
+> `ibm.ibm_zosmf` collection (`zmf_workflow*`); that approach is explored
+> separately in the workspace's `ansible-zosmf/` work.

@@ -1,9 +1,11 @@
 # z/OS HLASM Systems Programming Portfolio
 
-A collection of five IBM z/OS High Level Assembler (HLASM) artifacts that
+A collection of IBM z/OS High Level Assembler (HLASM) artifacts that
 demonstrate practical mainframe systems programming: macro engineering,
 control block navigation, dynamic allocation against JES2, recovery
-routine (ESTAE) handling with SDWA analysis, and SMF record mapping.
+routine (ESTAE) handling with SDWA analysis, and SMF record mapping —
+plus IPCS dump analysis, parm-driven feature-flag routing, and Ansible /
+z/OSMF automation.
 
 Everything here is written to z/OS conventions (AMODE 31 / RMODE ANY,
 standard OS linkage, IBM-supplied DSECTs and macros) and is meant to be
@@ -18,6 +20,9 @@ read like production code in a code review, not just to run.
 | 3 | [JES2 SYSOUT Scraper](03-sysout-scraper/) | Dynamic allocation via SVC 99 (`SUBSYS=JES2`), QSAM I/O, and the JES subsystem interface — reads a SYSOUT dataset and extracts matching lines. |
 | 4 | [ESTAE Recovery Demo](04-estae-demo/) | Recovery routines and supervisor services — forces an abend (e.g., S0C7), recovers in an ESTAE exit, formats SDWA fields, and reports; RETRY and PERCOLATE variants. |
 | 5 | [SMF Type-30 Reporter](05-smf30-reporter/) | SMF record mapping — `MKSMF30` writes synthetic type-30 subtype-5 records, `SMFRPT30` reads them with QSAM and reports job CPU/elapsed, locating sections via the `IFASMFR (30)` header triplets (`SMFRCD30`/`SMF30ID`/`SMF30CAS`). |
+| 6 | [IPCS Dump Practice](06-ipcs-dump-practice/) | Dump analysis — `DUMPPGM` builds eye-catcher'd structures and pointer chains, then forces a U0013 dump to analyse with IPCS (`FIND`, `LISTDUMP`, `WHERE`, `CBFORMAT`). |
+| 7 | [Ansible Automation](07-ansible-automation/) | DevOps on z/OS — an Ansible playbook drives a HLASM assemble/link through the z/OSMF REST API (submit, poll, fetch output, gate on return code). |
+| 8 | [Feature-Flag Routing](08-feature-flag-routing/) | Progressive delivery — `FEATFLAG` selects a LEGACY or NEW path in one load module from the EXEC `PARM`, with no relink to switch. |
 
 ## Repository layout
 
@@ -30,6 +35,9 @@ mainframe-portfolio/
   03-sysout-scraper/     src/ jcl/ docs/ samples/ README.md
   04-estae-demo/         src/ jcl/ docs/ README.md
   05-smf30-reporter/     src/ jcl/ docs/ README.md
+  06-ipcs-dump-practice/ src/ jcl/ docs/ README.md
+  07-ansible-automation/ playbooks/ jcl/ scripts/ docs/ README.md
+  08-feature-flag-routing/ src/ jcl/ docs/ README.md
 ```
 
 ### A note on file extensions

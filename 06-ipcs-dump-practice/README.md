@@ -1,245 +1,65 @@
-# IPCS Dump Practice System
+# 06 — IPCS Dump Practice (DUMPPGM)
 
-A complete system for generating and analyzing mainframe system dumps using IPCS (Interactive Problem Control System).
+A batch HLASM program that builds a set of clearly-labelled storage
+structures and then forces a dump, giving you a known, controlled dump to
+analyse with **IPCS** (Interactive Problem Control System). Pairs with the
+author's debugging strength: the eye-catchers and pointer chains are placed
+so each IPCS command has an obvious thing to find.
 
-## Overview
+## Purpose
 
-This project provides a hands-on learning environment for practicing IPCS dump analysis. It includes:
+Provide a safe, repeatable target for practising dump analysis — locating
+data by eye-catcher, walking pointer chains, and reading the failing PSW
+and registers — without needing a real production dump.
 
-- **DUMPPGM**: Assembly program that creates interesting data structures and forces a dump
-- **Build JCL**: Assembles and links the program
-- **Execution JCL**: Runs the program to generate a dump
-- **Analysis JCL**: Demonstrates batch IPCS commands
+## What the program builds, then dumps
 
-## Quick Start
+`DUMPPGM` lays out, in a GETMAINed work area, structures designed to be
+recognisable in a dump:
 
-### 1. Build the Program
+| Structure | Eye-catcher(s) | What to practise |
+|-----------|----------------|------------------|
+| Header | `DUMP` | version, program name, packed `TIME` stamp |
+| Sample table | `ENTRY0`…`ENTRY9` (10 entries) | scanning repeated fixed-length entries |
+| Control-block chain | `CTL1` → `CTL2` → `CTL3` | following forward/back pointers |
+| Data buffer (256B) | pattern fill + text strings | `FIND` on a known string |
 
-```jcl
-// Submit jcl/BUILDDMP.jcl
-// Update dataset names to match your environment
-```
-
-### 2. Generate a Dump
-
-```jcl
-// Submit jcl/RUNDUMP.jcl
-// Program will ABEND U0013 (expected)
-// Dump saved to userid.IPCS.DUMP
-```
-
-### 3. Analyze the Dump
-
-**Option A - Batch:**
-
-```jcl
-// Submit jcl/IPCSANAL.jcl
-```
-
-**Option B - Interactive TSO:**
-
-```
-TSO IPCS
-SETDEF DSNAME('userid.IPCS.DUMP') NOCONFIRM
-SUMMARY
-REGS
-WHERE
-LISTDUMP PSW,REGS,SAVE
-```
-
-## What's in the Dump?
-
-The program creates several data structures for practice:
-
-### 1. Header Structure
-
-- Eye-catcher: **'DUMP'**
-- Version, program name, timestamp
-
-### 2. Sample Table
-
-- 10 entries with sequential data
-- Eye-catcher: **'ENTRY'** + number
-
-### 3. Control Block Chain
-
-- 3 linked control blocks
-- Eye-catchers: **'CTL1'**, **'CTL2'**, **'CTL3'**
-- Forward and backward pointers
-
-### 4. Data Buffer
-
-- 256 bytes with pattern fill
-- Text strings: **"This is sample data for IPCS dump analysis practice"**
-- Search string: **"Look for this string in the dump file!"**
-
-## Practice Exercises
-
-### Beginner Level
-
-1. **Find the Eye-catchers**
-
-   ```
-   FIND 'DUMP' ASID(X'0001')
-   FIND 'CTL1' ASID(X'0001')
-   ```
-
-2. **Display Registers**
-
-   ```
-   REGS
-   VERBX REGS
-   ```
-
-3. **Show Failure Location**
-   ```
-   WHERE
-   LISTDUMP PSW
-   ```
-
-### Intermediate Level
-
-4. **Trace the Save Area Chain**
-
-   ```
-   LISTDUMP SAVE
-   ```
-
-5. **Find Text Strings**
-
-   ```
-   FIND 'This is sample data' ASID(X'0001')
-   ```
-
-6. **Examine Control Blocks**
-   ```
-   CBFORMAT
-   ```
-
-### Advanced Level
-
-7. **Analyze Storage Patterns**
-
-   ```
-   VERBX STORAGE
-   ```
-
-8. **Follow Pointer Chains**
-   - Locate CTL1
-   - Follow forward pointer to CTL2
-   - Follow forward pointer to CTL3
-   - Verify backward pointers
-
-9. **Reconstruct Program Flow**
-   - Find PSW at failure
-   - Trace back through save areas
-   - Identify calling sequence
+It then issues `ABEND 13,DUMP` — a **U0013** abend that produces the dump.
 
 ## Files
 
-```
-06-ipcs-dump-practice/
-├── README.md              # This file
-├── src/
-│   └── DUMPPGM.asm       # Assembly source program
-├── jcl/
-│   ├── BUILDDMP.jcl      # Build JCL
-│   ├── RUNDUMP.jcl       # Execution JCL
-│   └── IPCSANAL.jcl      # IPCS analysis JCL
-└── docs/
-    └── DESIGN.md         # Detailed design documentation
-```
+| File | What it is |
+|------|------------|
+| `src/DUMPPGM.asm` | The program — `AMODE 31 / RMODE ANY`, GETMAIN work area. |
+| `jcl/BUILDDMP.jcl` | Assemble + link-edit into a load library. |
+| `jcl/RUNDUMP.jcl` | Run the program; it abends U0013 and writes the dump. |
+| `jcl/IPCSANAL.jcl` | Batch IPCS commands against the captured dump. |
+| `docs/IPCS-COMMANDS.md` | IPCS command reference for the exercises. |
+| `docs/DESIGN.md` | Structure layouts and analysis notes. |
 
-## Key IPCS Commands
+(Several `BUILDDMP-*.jcl` variants are kept for different site setups.)
 
-| Command    | Purpose               |
-| ---------- | --------------------- |
-| `SETDEF`   | Define dump dataset   |
-| `STATUS`   | Show dump status      |
-| `SUMMARY`  | Display dump summary  |
-| `REGS`     | Show registers        |
-| `WHERE`    | Show failure location |
-| `LISTDUMP` | List dump components  |
-| `VERBX`    | Verbose display       |
-| `FIND`     | Search for strings    |
-| `CBFORMAT` | Format control blocks |
+## How to use it
 
-## Expected Results
+1. **Build** — submit `jcl/BUILDDMP.jcl` (retarget the dataset names).
+2. **Generate the dump** — submit `jcl/RUNDUMP.jcl`. The step abends
+   **U0013** by design and the dump is captured (to `SYSUDUMP`/`SYSABEND`,
+   or a dump dataset for IPCS).
+3. **Analyse** — either submit `jcl/IPCSANAL.jcl` for a batch IPCS run, or
+   work interactively under `TSO IPCS`:
 
-When you run RUNDUMP.jcl:
+   ```
+   SETDEF DSNAME('userid.IPCS.DUMP') NOCONFIRM
+   SUMMARY ; REGS ; WHERE
+   FIND 'DUMP'  ASID(X'0001')      locate the header
+   FIND 'CTL1'  ASID(X'0001')      then walk CTL1 -> CTL2 -> CTL3
+   LISTDUMP PSW,REGS,SAVE          failure point + save-area chain
+   ```
 
-- Job will complete with **ABEND U0013** (this is intentional)
-- Dump dataset will be created and cataloged
-- WTO messages will appear in SYSOUT:
-  - "DUMPPGM: Starting dump generation program"
-  - "DUMPPGM: Data structures created, forcing dump..."
+## Skills demonstrated
 
-## Tips
-
-1. **Start Simple**: Begin with SUMMARY and REGS commands
-2. **Use Eye-catchers**: Search for known strings to locate structures
-3. **Follow Chains**: Use pointers to navigate linked data
-4. **Practice Regularly**: IPCS skills improve with hands-on practice
-5. **Document Findings**: Use NOTE command to save your analysis
-
-## Troubleshooting
-
-### Dump dataset not found
-
-- Verify dataset name in SETDEF matches actual dump
-- Check if RUNDUMP.jcl completed successfully
-
-### IPCS commands fail
-
-- Ensure IPCS is installed and authorized
-- Check TSO/ISPF environment
-
-### Cannot find data structures
-
-- Use FIND command with eye-catchers
-- Verify correct ASID (usually X'0001')
-
-## Learning Resources
-
-- See `docs/DESIGN.md` for detailed technical information
-- IBM z/OS IPCS User's Guide
-- IBM z/OS IPCS Commands Reference
-- IBM z/OS MVS Diagnosis: Tools and Service Aids
-
-## Why Practice with IPCS?
-
-IPCS is a critical tool for:
-
-- **Problem Determination**: Analyzing system failures
-- **Performance Analysis**: Understanding system behavior
-- **Debugging**: Finding root causes of ABENDs
-- **System Programming**: Essential skill for z/OS professionals
-
-This practice system provides a safe, controlled environment to develop these skills without risk to production systems.
-
-## Next Steps
-
-After mastering this basic dump:
-
-1. Try different ABEND codes (S0C1, S0C4, S0C7)
-2. Create more complex data structures
-3. Practice with multi-threaded scenarios
-4. Develop custom IPCS REXX exits
-5. Analyze real production dumps (with proper authorization)
-
-## Contributing
-
-This is a learning tool. Feel free to:
-
-- Add more data structures to DUMPPGM
-- Create additional practice exercises
-- Develop automated analysis scripts
-- Share your IPCS tips and techniques
-
-## License
-
-Educational use. Part of the mainframe-portfolio project.
-
----
-
-**Happy Dump Analyzing!** 🔍💾
+- Reading dumps with IPCS: `SETDEF`, `SUMMARY`, `REGS`, `WHERE`,
+  `LISTDUMP`, `FIND`, `CBFORMAT`, `VERBX`.
+- Locating data structures by eye-catcher and walking pointer chains.
+- Producing a controlled abend (`ABEND ...,DUMP`) for problem-determination
+  practice.

@@ -18,7 +18,7 @@ multiple sessions, one artifact at a time.
   to produce correct source, JCL, and documentation that the author takes
   to the mainframe to build and run.
 
-## Portfolio scope — 5 artifacts
+## Portfolio scope — 8 artifacts
 
 1. **Personal Macro Library** (`01-macro-library/`)
    Curated structured-programming and utility macros: `@ENTER`/`@LEAVE`,
@@ -54,6 +54,24 @@ multiple sessions, one artifact at a time.
    Showcases: SMF record mapping, self-defining sections/triplets, QSAM,
    multi-DSECT addressability — ties to the author's JES/SMF background.
 
+6. **IPCS Dump Practice** (`06-ipcs-dump-practice/`)
+   `DUMPPGM` builds eye-catcher'd storage structures and a control-block
+   chain, then forces a U0013 dump for analysis with IPCS.
+   Showcases: dump analysis, problem determination, IPCS commands —
+   pairs with the author's dump-debugging strength.
+
+7. **Ansible Automation** (`07-ansible-automation/`)
+   An Ansible playbook drives a HLASM assemble/link through the z/OSMF
+   REST API (upload, submit, poll, fetch output, gate on return code).
+   Showcases: DevOps on z/OS, z/OSMF REST, automation with credentials
+   kept out of source.
+
+8. **Feature-Flag Routing** (`08-feature-flag-routing/`)
+   `FEATFLAG` selects a LEGACY or NEW path in one load module from the
+   EXEC `PARM`, with no relink to switch; each route reports via WTO.
+   Showcases: parm-driven routing / progressive delivery, register-1
+   lifetime discipline (the rehabilitated, de-DB2'd `FLAGDB2`).
+
 ## Status
 
 | # | Artifact              | Status      |
@@ -63,6 +81,9 @@ multiple sessions, one artifact at a time.
 | 3 | JES2 SYSOUT Scraper   | Complete    |
 | 4 | ESTAE Recovery Demo   | Complete    |
 | 5 | SMF Type-30 Reporter  | Complete    |
+| 6 | IPCS Dump Practice    | Complete    |
+| 7 | Ansible Automation    | Complete    |
+| 8 | Feature-Flag Routing  | Complete    |
 
 Status values: Not started / In progress / Complete.
 
